@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+   <div class="container mt-4">
+    <h2>Edit Product</h2>
+
+    <form action="/update-product/<%= product._id %>" method="POST">
+
+        <input class="form-control mb-2" 
+        type="text" 
+        name="product_name" 
+        value="<%= product.product_name %>">
+
+        <input class="form-control mb-2" 
+        type="text" 
+        name="product_desc" 
+        value="<%= product.product_desc %>">
+
+        <input class="form-control mb-2" 
+        type="number" 
+        name="product_price" 
+        value="<%= product.product_price %>">
+
+        <input class="form-control mb-2" 
+        type="number" 
+        name="product_quantity" 
+        value="<%= product.product_quantity %>">
+
+        <input class="form-control mb-3" 
+        type="text" 
+        name="product_image" 
+        value="<%= product.product_image %>">
+
+        <button class="btn btn-success">Update Product</button>
+
+    </form>
+</div>
+</body>
+</html>

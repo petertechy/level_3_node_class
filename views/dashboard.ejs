@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h1>Welcome to Dashboard <%= name %> </h1>
+    <% if (gender == "male") { %>
+     <h1>Hello, descendant of Adam</h1>
+    <% } else{ %>
+        <h1>Hello, descendant of Eve</h1>
+       <% } %> 
+
+       <% for( let index = 0; index < allStudents.length; index++ ) { %>
+        <h1><%= allStudents[index].firstname %></h1>
+        <h1><%= allStudents[index].lastname %></h1>
+        <h1><%= allStudents[index].email %></h1>
+       <% } %>
+
+       <!-- <% allStudents.map(user => { %>
+        <h1><%= user.firstname %></h1>
+       <% }) %> -->
+
+
+</body>
+</html>
