@@ -1,0 +1,22 @@
+{
+  "name": "backend-project",
+  "version": "1.0.0",
+  "description": "This is my first backend project",
+  "main": "index.js",
+  "scripts": {
+    "test": "test.js"
+  },
+  "keywords": [
+    "backend",
+    "first"
+  ],
+  "author": "Olanrewaju",
+  "license": "ISC",
+  "dependencies": {
+    "dotenv": "^17.3.1",
+    "ejs": "^4.0.1",
+    "express": "^5.2.1",
+    "mongodb": "^7.1.0",
+    "mongoose": "^9.2.2"
+  }
+}
