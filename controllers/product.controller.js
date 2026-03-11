@@ -1,5 +1,6 @@
 const express = require("express");
 const app = express();
+const mongoose = require("mongoose");
 
 const productModel = require("../models/product.model")
 const addProduct = (req,res) =>{
@@ -9,7 +10,7 @@ const addProduct = (req,res) =>{
         .then(() => {
           console.log("Product saved");
           // res.send("Product added successfully");
-          res.redirect("/all-product")
+          res.redirect("/admin/all-product")
         })
         .catch((error) => {
           console.log(error);
@@ -42,7 +43,7 @@ const deleteProduct = (req, res) =>{
         .findByIdAndDelete(productId)
         .then(() => {
           console.log("Product deleted");
-          res.redirect("/all-product");
+          res.redirect("/admin/all-product");
         })
         .catch((error) => {
           console.log(error);
