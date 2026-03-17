@@ -6,13 +6,16 @@ const PORT = process.env.PORT;
 const mongoose = require("mongoose");
 const adminRoute = require("./routes/admin.route")
 const userRoute = require("./routes/user.route")
+const URI = process.env.MONGODB_URI;
+const cors = require("cors")
 
+app.use(cors())
 app.set("view engine", "ejs");
 app.use(express.urlencoded({ extended: true }));
+app.use(express.json())
 app.use("/admin", adminRoute)
 app.use("/user", userRoute)
 
-const URI = process.env.MONGODB_URI;
 
 mongoose
   .connect(URI)
