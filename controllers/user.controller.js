@@ -1,6 +1,7 @@
 const express = require("express");
 const app = express();
 const userModel = require("../models/user.model");
+const jwt = require("jsonwebtoken")
 
 const signUp = (req, res) => {
   res.render("signup");
@@ -52,7 +53,9 @@ const authenticateUser = (req, res) => {
           if (!same) {
             res.send({ status: false, message: "Invalid Credentials" });
           } else {
-            res.send({ status: true, message: "Valid Credentials" });
+           let token =  jwt.sign({email:req.body.email}, "secret", {expiresIn: "1h"})
+           console.log(token)
+            res.send({ status: true, message: "Valid Credentials", token });
           }
         });
       } else {
@@ -65,10 +68,30 @@ const authenticateUser = (req, res) => {
     });
 };
 
+const getDashboard = (req, res) =>{
+  console.log(req.headers.authorization)
+  let token = req.headers.authorization.split(" ")[1]
+  jwt.verify(token, "secret", (err, result)=>{
+    if(err){
+      console.log(err)
+      res.send({status: false, message: "Token expired or Invalid token"})
+    }else{
+      console.log(result)
+      let email = result.email
+      userModel.findOne({email:email},{firstname, lastname, age})
+      .then((user)=>{
+        res.send({status: true, message: "Valid Token", user})
+      })
+    }
+  })
+  // console.log("I am here")
+}
+
 module.exports = {
   registerUser,
   signUp,
   userDashboard,
   landingPage,
   authenticateUser,
+  getDashboard
 };
