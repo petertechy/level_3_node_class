@@ -2,6 +2,13 @@ const express = require("express");
 const app = express();
 const userModel = require("../models/user.model");
 const jwt = require("jsonwebtoken")
+const cloudinary = require("cloudinary")
+
+cloudinary.config({
+  cloud_name: "dcycdzgln",
+  api_key: "116745742688568",
+  api_secret: "w44E55BJRcmzoOYmUYrn67Adnj8"
+})
 
 const signUp = (req, res) => {
   res.render("signup");
@@ -87,11 +94,27 @@ const getDashboard = (req, res) =>{
   // console.log("I am here")
 }
 
+const uploadFile = (req, res) =>{
+  console.log(req.body.file)
+  let myFile = req.body.file
+  cloudinary.v2.uploader.upload(myFile,(err, result)=>{
+    if(err){
+      console.log("An error occured during upload")
+      console.log(err)
+    }else{
+      console.log(result)
+      let imageUrl = result.secure_url
+      res.send({status: true, message: "Uploaded Successfully", imageUrl})
+    }
+  })
+}
+
 module.exports = {
   registerUser,
   signUp,
   userDashboard,
   landingPage,
   authenticateUser,
-  getDashboard
+  getDashboard,
+  uploadFile
 };
