@@ -3,6 +3,8 @@ const app = express();
 const userModel = require("../models/user.model");
 const jwt = require("jsonwebtoken")
 const cloudinary = require("cloudinary")
+const nodemailer = require("nodemailer")
+const registrationEmail = require("../emails/registrationEmail")
 
 cloudinary.config({
   cloud_name: "dcycdzgln",
@@ -34,7 +36,32 @@ const registerUser = (req, res) => {
     .save()
     .then((user) => {
       console.log("User saved in db");
-      console.log(user)
+      // console.log(user)
+      
+
+      let transporter = nodemailer.createTransport({
+        service: "gmail",
+        auth: {
+          user: process.env.USER,
+          pass: process.env.PASS,
+        },
+      });
+
+      let mailOptions = {
+        from: '"Elon Musk" <petertechy01@gmail.com>',
+        to: [req.body.email, "ajibolamoses11@gmail.com"],
+        subject: "🎉 Welcome to Elon Musk – Registration Successful!",
+        html: registrationEmail(req.body.firstname, req.body.lastname),
+      };
+
+      transporter.sendMail(mailOptions, function (error, info) {
+        if (error) {
+          console.log(error);
+        } else {
+          console.log("Email sent: " + info.response);
+        }
+      });
+
       res.send({ message: "User registered", status: true, user: user });
     })
     .catch((error) => {
