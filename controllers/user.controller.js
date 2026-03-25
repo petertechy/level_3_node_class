@@ -1,16 +1,16 @@
 const express = require("express");
 const app = express();
 const userModel = require("../models/user.model");
-const jwt = require("jsonwebtoken")
-const cloudinary = require("cloudinary")
-const nodemailer = require("nodemailer")
-const registrationEmail = require("../emails/registrationEmail")
+const jwt = require("jsonwebtoken");
+const cloudinary = require("cloudinary");
+const nodemailer = require("nodemailer");
+const registrationEmail = require("../emails/registrationEmail");
 
 cloudinary.config({
   cloud_name: "dcycdzgln",
   api_key: "116745742688568",
-  api_secret: "w44E55BJRcmzoOYmUYrn67Adnj8"
-})
+  api_secret: "w44E55BJRcmzoOYmUYrn67Adnj8",
+});
 
 const signUp = (req, res) => {
   res.render("signup");
@@ -37,7 +37,6 @@ const registerUser = (req, res) => {
     .then((user) => {
       console.log("User saved in db");
       // console.log(user)
-      
 
       let transporter = nodemailer.createTransport({
         service: "gmail",
@@ -87,8 +86,10 @@ const authenticateUser = (req, res) => {
           if (!same) {
             res.send({ status: false, message: "Invalid Credentials" });
           } else {
-           let token =  jwt.sign({email:req.body.email}, "secret", {expiresIn: "1h"})
-           console.log(token)
+            let token = jwt.sign({ email: req.body.email }, "secret", {
+              expiresIn: "1h",
+            });
+            console.log(token);
             res.send({ status: true, message: "Valid Credentials", token });
           }
         });
@@ -102,39 +103,67 @@ const authenticateUser = (req, res) => {
     });
 };
 
-const getDashboard = (req, res) =>{
-  console.log(req.headers.authorization)
-  let token = req.headers.authorization.split(" ")[1]
-  jwt.verify(token, "secret", (err, result)=>{
-    if(err){
-      console.log(err)
-      res.send({status: false, message: "Token expired or Invalid token"})
-    }else{
-      console.log(result)
-      let email = result.email
-      userModel.findOne({email:email},{firstname, lastname, age})
-      .then((user)=>{
-        res.send({status: true, message: "Valid Token", user})
-      })
-    }
-  })
-  // console.log("I am here")
-}
+const getDashboard = async (req, res) => {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res
+      .status(401)
+      .send({ status: false, message: "Missing or malformed token" });
+  }
 
-const uploadFile = (req, res) =>{
-  console.log(req.body.file)
-  let myFile = req.body.file
-  cloudinary.v2.uploader.upload(myFile,(err, result)=>{
-    if(err){
-      console.log("An error occured during upload")
-      console.log(err)
-    }else{
-      console.log(result)
-      let imageUrl = result.secure_url
-      res.send({status: true, message: "Uploaded Successfully", imageUrl})
+  const token = authHeader.split(" ")[1];
+
+  jwt.verify(token, "secret", async (err, decoded) => {
+    if (err) {
+      console.log(err);
+      return res
+        .status(401)
+        .send({ status: false, message: "Token expired or invalid token" });
     }
-  })
-}
+
+    const email = decoded?.email;
+    if (!email) {
+      return res
+        .status(401)
+        .send({ status: false, message: "Invalid token payload" });
+    }
+
+    try {
+      const user = await userModel.findOne(
+        { email },
+        { firstname: 1, lastname: 1, email: 1, age: 1, _id: 1 },
+      );
+
+      if (!user) {
+        return res
+          .status(404)
+          .send({ status: false, message: "User not found" });
+      }
+
+      return res.send({ status: true, message: "Valid token", user });
+    } catch (findErr) {
+      console.log(findErr);
+      return res
+        .status(500)
+        .send({ status: false, message: "Error fetching user data" });
+    }
+  });
+};
+
+const uploadFile = (req, res) => {
+  console.log(req.body.file);
+  let myFile = req.body.file;
+  cloudinary.v2.uploader.upload(myFile, (err, result) => {
+    if (err) {
+      console.log("An error occured during upload");
+      console.log(err);
+    } else {
+      console.log(result);
+      let imageUrl = result.secure_url;
+      res.send({ status: true, message: "Uploaded Successfully", imageUrl });
+    }
+  });
+};
 
 module.exports = {
   registerUser,
@@ -143,5 +172,5 @@ module.exports = {
   landingPage,
   authenticateUser,
   getDashboard,
-  uploadFile
+  uploadFile,
 };
