@@ -1,10 +1,11 @@
-const express = require("express");
-const app = express();
 const userModel = require("../models/user.model");
 const jwt = require("jsonwebtoken");
 const cloudinary = require("cloudinary");
 const nodemailer = require("nodemailer");
 const registrationEmail = require("../emails/registrationEmail");
+
+const allStudents = [];
+const PAYSTACK_API_URL = "https://api.paystack.co";
 
 cloudinary.config({
   cloud_name: "dcycdzgln",
@@ -165,6 +166,164 @@ const uploadFile = (req, res) => {
   });
 };
 
+const paystackRequest = async (path, method, data = null) => {
+  const secretKey = process.env.PAYSTACK_SECRET_KEY;
+  if (!secretKey) {
+    throw new Error("Missing PAYSTACK_SECRET_KEY in environment");
+  }
+
+  const requestConfig = {
+    method,
+    headers: {
+      Authorization: `Bearer ${secretKey}`,
+      "Content-Type": "application/json",
+    },
+  };
+
+  if (data) {
+    requestConfig.body = JSON.stringify(data);
+  }
+
+  const response = await fetch(`${PAYSTACK_API_URL}${path}`, requestConfig);
+  const payload = await response.json();
+  return payload;
+};
+
+// Paystack expects amount in Kobo, not Naira.
+const toKobo = (nairaAmount) => Math.round(Number(nairaAmount) * 100);
+
+const initializePayment = async (req, res) => {
+  const { email, amount, metadata } = req.body;
+
+  if (!email || !amount) {
+    return res.status(400).send({
+      status: false,
+      message: "email and amount are required",
+    });
+  }
+
+  const numericAmount = Number(amount);
+  if (Number.isNaN(numericAmount) || numericAmount <= 0) {
+    return res.status(400).send({
+      status: false,
+      message: "amount must be a valid number greater than 0",
+    });
+  }
+
+  try {
+    const callbackUrl = `${req.protocol}://${req.get("host")}/user/payment/callback`;
+
+    const paystackResponse = await paystackRequest(
+      "/transaction/initialize",
+      "POST",
+      {
+        email,
+        amount: toKobo(numericAmount),
+        callback_url: callbackUrl,
+        metadata,
+      },
+    );
+
+    if (!paystackResponse.status) {
+      return res.status(400).send({
+        status: false,
+        message: paystackResponse.message || "Unable to initialize payment",
+      });
+    }
+
+    return res.send({
+      status: true,
+      message: "Payment initialized",
+      data: paystackResponse.data,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      status: false,
+      message: "Payment initialization failed",
+    });
+  }
+};
+
+const verifyPayment = async (req, res) => {
+  const { reference } = req.params;
+
+  if (!reference) {
+    return res.status(400).send({
+      status: false,
+      message: "reference is required",
+    });
+  }
+
+  try {
+    const paystackResponse = await paystackRequest(
+      `/transaction/verify/${reference}`,
+      "GET",
+    );
+
+    if (!paystackResponse.status) {
+      return res.status(400).send({
+        status: false,
+        message: paystackResponse.message || "Unable to verify payment",
+      });
+    }
+
+    return res.send({
+      status: true,
+      message: "Payment verification complete",
+      data: paystackResponse.data,
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).send({
+      status: false,
+      message: "Payment verification failed",
+    });
+  }
+};
+
+const paymentCallback = async (req, res) => {
+  const { reference } = req.query;
+
+  if (!reference) {
+    return res.status(400).render("paymentStatus", {
+      status: false,
+      message: "Missing payment reference",
+      reference: "N/A",
+      amount: "N/A",
+    });
+  }
+
+  try {
+    const paystackResponse = await paystackRequest(
+      `/transaction/verify/${reference}`,
+      "GET",
+    );
+
+    const verified =
+      paystackResponse.status && paystackResponse.data?.status === "success";
+
+    return res.render("paymentStatus", {
+      status: verified,
+      message: verified
+        ? "Payment successful"
+        : paystackResponse.message || "Payment not successful",
+      reference,
+      amount: paystackResponse.data?.amount
+        ? paystackResponse.data.amount / 100
+        : "N/A",
+    });
+  } catch (error) {
+    console.log(error);
+    return res.status(500).render("paymentStatus", {
+      status: false,
+      message: "Error confirming payment",
+      reference,
+      amount: "N/A",
+    });
+  }
+};
+
 module.exports = {
   registerUser,
   signUp,
@@ -173,4 +332,7 @@ module.exports = {
   authenticateUser,
   getDashboard,
   uploadFile,
+  initializePayment,
+  verifyPayment,
+  paymentCallback,
 };
