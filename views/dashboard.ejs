@@ -19,6 +19,60 @@
         <h1><%= allStudents[index].email %></h1>
        <% } %>
 
+             <hr />
+             <h2>Paystack Test Payment</h2>
+             <p>Enter an email and amount in Naira to start a test transaction.</p>
+
+             <form id="paystackPaymentForm">
+                <label for="paymentEmail">Email</label><br />
+                <input id="paymentEmail" type="email" required placeholder="user@email.com" />
+                <br /><br />
+
+                <label for="paymentAmount">Amount (NGN)</label><br />
+                <input id="paymentAmount" type="number" min="1" required placeholder="1000" />
+                <br /><br />
+
+                <button type="submit">Pay with Paystack (Test)</button>
+             </form>
+
+             <p id="paymentMessage"></p>
+
+             <script>
+                const paymentForm = document.getElementById("paystackPaymentForm");
+                const paymentMessage = document.getElementById("paymentMessage");
+
+                paymentForm.addEventListener("submit", async (event) => {
+                    event.preventDefault();
+
+                    const email = document.getElementById("paymentEmail").value;
+                    const amount = document.getElementById("paymentAmount").value;
+
+                    paymentMessage.textContent = "Initializing payment...";
+
+                    try {
+                        const response = await fetch("/user/payment/initialize", {
+                            method: "POST",
+                            headers: {
+                                "Content-Type": "application/json",
+                            },
+                            body: JSON.stringify({ email, amount }),
+                        });
+
+                        const result = await response.json();
+
+                        if (!response.ok || !result.status) {
+                            paymentMessage.textContent = result.message || "Unable to initialize payment.";
+                            return;
+                        }
+
+                        paymentMessage.textContent = "Redirecting to Paystack checkout...";
+                        window.location.href = result.data.authorization_url;
+                    } catch (error) {
+                        paymentMessage.textContent = "An error occurred while starting payment.";
+                    }
+                });
+             </script>
+
        <!-- <% allStudents.map(user => { %>
         <h1><%= user.firstname %></h1>
        <% }) %> -->
